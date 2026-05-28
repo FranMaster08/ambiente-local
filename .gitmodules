@@ -1,0 +1,6 @@
+[submodule "anyjobs-back"]
+	path = anyjobs-back
+	url = git@github.com:FranMaster08/anyjobs-backend.git
+[submodule "anyjobs-front"]
+	path = anyjobs-front
+	url = git@github.com:FranMaster08/anyjobs-front.git

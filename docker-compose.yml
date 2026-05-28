@@ -1,0 +1,116 @@
+services:
+  # Captura SMTP en local (UI: http://localhost:8025). El backend usa host "mailpit" dentro de la red Docker.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "${ANYJOBS_SMTP_PORT:-1025}:1025"
+      - "${ANYJOBS_MAILPIT_UI_PORT:-8025}:8025"
+    restart: unless-stopped
+
+  anyjobs-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: anyjobs
+    ports:
+      - "${ANYJOBS_DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d anyjobs"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - anyjobs_pgdata:/var/lib/postgresql/data
+
+  anyjobs-back:
+    build:
+      context: ./anyjobs-back
+      target: dev
+    command: ["sh", "-lc", "npm run migration:run && npm run seed && npm run start:api:dev"]
+    env_file:
+      - ./anyjobs-back/.env
+    environment:
+      APP_PORT: 3000
+      # Rutas relativas /uploads/... (proxy del front). Para URL absoluta al API: ANYJOBS_APP_PUBLIC_URL=http://localhost:3000
+      APP_PUBLIC_URL: ${ANYJOBS_APP_PUBLIC_URL:-relative}
+      LOG_LEVEL: log
+      LOG_DEBUG_PAYLOADS: "false"
+
+      SWAGGER_ENABLED: "true"
+      SWAGGER_PATH: docs
+
+      PAGINATION_DEFAULT_PAGE_SIZE: 20
+      PAGINATION_MAX_PAGE_SIZE: 100
+
+      SEED_DEMO_PASSWORD: "Demo1234!"
+
+      DB_TYPE: postgres
+      DB_HOST: anyjobs-postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: anyjobs
+      DB_SSL: "false"
+      DB_LOGGING: "false"
+      DB_SYNCHRONIZE: "false"
+      DB_MIGRATIONS_RUN: "true"
+
+      # SMTP local: Mailpit (sobreescribe Hostinger del .env para que los correos se vean en :8025)
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@anyjobs.local
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+      SMTP_SECURE: "false"
+      FRONTEND_PUBLIC_URL: ${FRONTEND_PUBLIC_URL:-http://localhost:4200}
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${ANYJOBS_BACK_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://localhost:3000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1));\"",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    depends_on:
+      anyjobs-postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    volumes:
+      - ./anyjobs-back:/app
+      - /app/node_modules
+      - /app/dist
+
+  anyjobs-front:
+    build:
+      context: ./anyjobs-front
+      target: dev
+    # `npm install` al inicio: el volumen anyjobs_front_node_modules puede quedar
+    # desactualizado al añadir dependencias; evita TS2307 en el contenedor.
+    command:
+      [
+        "sh",
+        "-lc",
+        "npm install && npm run start -- --configuration development-docker --host 0.0.0.0 --port 4200",
+      ]
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: alfajobhub.es
+    ports:
+      - "${ANYJOBS_FRONT_PORT:-4200}:4200"
+    depends_on:
+      anyjobs-back:
+        condition: service_healthy
+    volumes:
+      - ./anyjobs-front/anyjobs:/app
+      - anyjobs_front_node_modules:/app/node_modules
+
+volumes:
+  anyjobs_pgdata:
+  anyjobs_front_node_modules:
+
