@@ -1,0 +1,94 @@
+---
+description: Revisión técnica obligatoria después de cada ejecución de /opsx-apply (linter, tests, docs)
+alwaysApply: true
+---
+
+# Revisión post-cambio obligatoria tras `/opsx-apply`
+
+## Cuándo aplica
+
+Ejecutar **inmediatamente** este flujo completo al terminar (o pausar) cualquier aplicación de cambio con `/opsx-apply` o la skill `openspec-apply-change`. **No considerar terminado** el cambio sin completar todos los pasos o documentar bloqueos explícitos.
+
+## Proyectos del monorepo
+
+| Proyecto | Ruta raíz |
+|----------|-----------|
+| Front-end | `anyjobs-front/anyjobs/` |
+| Back-end | `anyjobs-back/` |
+
+Descubrir comandos oficiales en `package.json`, `Makefile`, `README` o docs internas de cada proyecto. **No inventar comandos** si ya existen oficiales.
+
+## Flujo obligatorio (en este orden)
+
+### 1. Revisión del estado del proyecto
+
+- Revisar archivos modificados (`git status`, `git diff`).
+- Identificar impacto: front-end, back-end o ambos.
+- Confirmar que no hay archivos generados, temporales o cambios accidentales fuera del alcance del cambio.
+
+### 2. Linter en ambos proyectos
+
+- Ejecutar linter del front-end desde `anyjobs-front/anyjobs/`.
+- Ejecutar linter del back-end desde `anyjobs-back/`.
+- Si no existe comando de linter en algún proyecto, documentarlo como **hallazgo pendiente** (no omitir el paso).
+
+### 3. Tests en ambos proyectos
+
+- Ejecutar tests del front-end desde `anyjobs-front/anyjobs/`.
+- Ejecutar tests del back-end desde `anyjobs-back/`.
+- Si no existe comando de tests en algún proyecto, documentarlo como **hallazgo pendiente** (no omitir el paso).
+
+### 4. Corrección de errores
+
+- Si el linter falla: corregir errores provocados por el cambio aplicado.
+- Si los tests fallan: analizar si la falla fue causada por el cambio; corregir las relacionadas.
+- Repetir linter y tests tras cada corrección hasta que pasen o quede un bloqueo documentado.
+- **Prohibido**: ocultar fallos, marcar como exitoso sin ejecutar, eliminar tests, o debilitar reglas de linter/tests sin justificación técnica clara.
+
+### 5. Revisión de documentación
+
+Revisar si el cambio requiere actualizar:
+
+- OpenSpec (artefactos del change, specs, tasks)
+- README y documentación técnica
+- Comentarios o docs de endpoints, servicios o componentes modificados
+
+Actualizar documentación si el cambio afecta comportamiento funcional, contratos de API, comandos, flujos de usuario, variables de entorno o configuración.
+
+Si no aplica actualización, dejar constancia explícita: *"Documentación revisada; no requiere cambios."*
+
+### 6. Resumen final obligatorio
+
+Entregar siempre este resumen al usuario:
+
+```markdown
+## Revisión post-/opsx-apply
+
+**Change:** <nombre>
+**Archivos modificados:** <lista relevante>
+**Alcance:** front-end | back-end | ambos
+
+### Linter
+- Front-end: `<comando>` → ✅/❌/⏸ pendiente
+- Back-end: `<comando>` → ✅/❌/⏸ pendiente
+
+### Tests
+- Front-end: `<comando>` → ✅/❌/⏸ pendiente
+- Back-end: `<comando>` → ✅/❌/⏸ pendiente
+
+### Documentación
+- Revisada: <archivos/áreas>
+- Actualizada: <archivos> | No requiere cambios
+
+### Errores y correcciones
+- <descripción o "Ninguno">
+
+### Pendientes o bloqueos
+- <descripción o "Ninguno">
+```
+
+## Restricciones
+
+- No modificar archivos fuera del alcance salvo para corregir linter, tests o documentación relacionada con el cambio.
+- No asumir que front-end y back-end comparten los mismos comandos.
+- No omitir documentación cuando el cambio afecte comportamiento funcional o contratos del sistema.

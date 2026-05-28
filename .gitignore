@@ -1,0 +1,35 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Docker
+**/uploads/
+**/.dockerignore
+
+# Git
+.git/
+.gitmodules
+
+# Others
+/dist/
+/build/
+coverage/
+
+# Submodules
+anyjobs-back/node_modules/
+anyjobs-front/node_modules/
