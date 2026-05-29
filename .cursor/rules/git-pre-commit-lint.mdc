@@ -1,0 +1,35 @@
+---
+description: Ejecutar linter/build antes de crear commits en front, back o monorepo
+alwaysApply: true
+---
+
+# Verificación pre-commit (agente y desarrolladores)
+
+Antes de **cualquier `git commit`** en estos repos, ejecutar la verificación correspondiente y corregir errores bloqueantes:
+
+| Repo | Ruta de trabajo | Comando |
+|------|-----------------|--------|
+| Front | `anyjobs-front/anyjobs/` | `npm run lint` |
+| Back | `anyjobs-back/` | `npm run build` (no hay `lint`; `npm test` en cambios de tests) |
+| Monorepo | `ambiente-local/` | Según archivos staged en submódulos |
+
+## Hook Git (opcional local)
+
+Instalar en cada repo donde commitees:
+
+```bash
+# Monorepo
+./scripts/install-git-hooks.sh
+
+# Back
+cd anyjobs-back && ./scripts/install-git-hooks.sh
+
+# Front
+cd anyjobs-front/anyjobs && ./scripts/install-git-hooks.sh
+```
+
+El hook **no sustituye** CI; evita commits que rompan compilación o lint en el área tocada.
+
+## OpenSpec / opsx-apply
+
+Tras `/opsx-apply`, la regla `opsx-apply-revision-post-cambio` sigue exigiendo linter y tests completos; este pre-commit es la barrera mínima antes de commitear.
