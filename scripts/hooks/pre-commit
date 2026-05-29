@@ -1,0 +1,50 @@
+#!/bin/sh
+# Pre-commit: verificación mínima de calidad según el repo donde se ejecuta.
+# Instalar: ./scripts/install-git-hooks.sh (desde la raíz del repo que quieras proteger)
+
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+run_in_dir() {
+  dir="$1"
+  label="$2"
+  [ -d "$dir" ] || return 0
+  if ! git diff --cached --name-only | grep -q "^${dir%/}/"; then
+    return 0
+  fi
+  echo "pre-commit: ${label} (${dir})"
+  (
+    cd "$dir"
+    if [ -f package.json ] && node -e "const p=require('./package.json'); process.exit(p.scripts&&p.scripts.lint?0:1)" 2>/dev/null; then
+      npm run lint
+    elif [ -f package.json ] && node -e "const p=require('./package.json'); process.exit(p.scripts&&p.scripts.build?0:1)" 2>/dev/null; then
+      npm run build
+    else
+      echo "pre-commit: sin script lint/build en ${dir}; omitiendo"
+    fi
+  )
+}
+
+# Monorepo ambiente-local
+run_in_dir "anyjobs-front/anyjobs" "front lint"
+run_in_dir "anyjobs-back" "back build"
+
+# Repo anyjobs-front (submódulo / standalone)
+if [ -f "anyjobs/package.json" ]; then
+  if git diff --cached --name-only | grep -q '^anyjobs/'; then
+    echo "pre-commit: front lint (anyjobs/)"
+    (cd anyjobs && npm run lint)
+  fi
+fi
+
+# Repo anyjobs-back standalone
+if [ -f "package.json" ] && [ -f "apps/api/src/main.ts" ]; then
+  if git diff --cached --name-only | grep -qE '^(apps/|package\.json)'; then
+    echo "pre-commit: back build"
+    npm run build
+  fi
+fi
+
+exit 0

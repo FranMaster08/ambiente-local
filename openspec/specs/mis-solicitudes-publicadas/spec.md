@@ -74,7 +74,8 @@ La pantalla `my-requests-dashboard` MUST exponer dos pestañas accesibles para e
 - **WHEN** la pestaña "Publicadas por mí" tiene al menos una solicitud
 - **THEN** cada card MUST mostrar `title`, `excerpt`, `locationLabel`, `budgetLabel`, `publishedAtLabel` (cuando estén presentes)
 - **AND** MUST exponer una acción "Ver detalle" que navega a `/solicitudes/<id>`
-- **AND** MUST mostrar una badge visual ("Publicada por ti" o equivalente) para diferenciarse de los items de la pestaña "Postulé a estas"
+- **AND** MUST mostrar una chip de estado según `lifecycleStatus`: «Activo» si `ACTIVE`, «Cerrado» si `CANCELLED`
+- **AND** MUST NOT mostrar la chip fija «Publicada por ti»
 
 #### Scenario: Sesión inactiva oculta las tabs
 - **WHEN** el usuario no tiene sesión iniciada y entra a `/mis-solicitudes`
@@ -109,3 +110,32 @@ La pantalla `my-requests-dashboard` MUST, en cualquier pestaña o lista donde se
 
 - **WHEN** el creador expande postulantes en “Publicadas por mí” o el detalle de propuesta en “Postulé a estas” y existe `userId` en la propuesta
 - **THEN** la UI MUST ofrecer un enlace visible “Ver perfil” hacia `/usuarios/:userId` además del bloque identitario navegable, sin anidar enlaces
+
+### Requirement: Pestaña "Postulé a estas" refleja solicitud cancelada
+
+Cuando el detalle o datos agregados de la solicitud asociada a una postulación indiquen `lifecycleStatus` = `CANCELLED`, la card en la pestaña «Postulé a estas» MUST reflejar el cierre sin eliminar el ítem del listado.
+
+#### Scenario: Chip Cancelada en lugar de Enviada
+
+- **WHEN** el usuario ve una postulación cuya solicitud padre está `CANCELLED`
+- **THEN** la chip de estado MUST mostrar «Cancelada» y MUST NOT mostrar «Enviada»
+- **AND** el badge del panel expandido de propuesta MUST ser coherente (p. ej. «Cancelada» en lugar de «Enviada»)
+
+#### Scenario: Acciones ocultas en solicitud cancelada
+
+- **WHEN** la solicitud asociada está `CANCELLED`
+- **THEN** la UI MUST NOT mostrar el enlace «Ver detalle»
+- **AND** MUST NOT mostrar el botón «Ver mi propuesta» ni «Ocultar mi propuesta»
+- **AND** el artículo MUST permanecer visible en la lista como registro histórico
+
+#### Scenario: Postulación activa mantiene acciones habituales
+
+- **WHEN** la solicitud asociada está `ACTIVE`
+- **THEN** la UI MUST mantener las acciones «Ver detalle» y «Ver mi propuesta» / «Ocultar mi propuesta» según el comportamiento previo
+- **AND** la chip MUST mostrar «Enviada» para la propuesta enviada
+
+#### Scenario: Card applied sin miniatura ocupa ancho completo
+
+- **WHEN** un ítem en «Postulé a estas» no tiene imagen de solicitud en la card
+- **THEN** el layout MUST usar una sola columna de contenido (sin reservar columna fija de thumbnail vacía)
+- **AND** título, chips y metadatos MUST ser legibles a ancho completo del contenedor
